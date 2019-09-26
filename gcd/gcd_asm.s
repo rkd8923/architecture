@@ -11,7 +11,14 @@
 gcd:
 	#------Your code starts here------
 	#LHS: a0, RHS: a1
-
+	beq		a0, a1, Exit
+	blt		a1, a0, L1
+	sub		a1, a1, a0
+	beq		a0, a1, Exit
+	bne		a0, a1, gcd
+L1:
+	sub		a0, a0, a1
+	bne		a0, a1, gcd
 	#Load return value to reg a0
 	#------Your code ends here------
 
