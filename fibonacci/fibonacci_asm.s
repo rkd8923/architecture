@@ -9,7 +9,22 @@
 fibonacci:
 	#------Your code starts here------
 	#LHS: a0, RHS: a1
-
+	add		t3, zero, zero
+	add		t6, zero, zero
+	addi	t3, t3, 1
+	sd		t3, (a0)
+	addi	t6, a0, 8
+	sd		t3, (t6)
+	addi	t5, zero, 2
+Fibo:
+	ld		t3, (t6)
+	ld		t4, -8(t6)
+	add		t3, t3, t4
+	addi	t6, t6, 8
+	sd		t3, (t6)
+	addi	t5, t5, 1
+	bne		t5, a1, Fibo
+	
 	#Load return value to reg a0
 	#------Your code ends here------
 
