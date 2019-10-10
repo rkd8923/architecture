@@ -183,7 +183,10 @@ int bitOr(int x, int y) {
  *   Rating: 3
  */
 int isAsciiDigit(int x) {
-  return 2;
+	int var1 = 1 << 31;
+	int var2 = ~(var1 | 0x39);
+	int var3 = ~(0x30);
+  return !((var1 & (var2+x) >> 31) | (var1 & (var3 + 1 + x) >> 31));
 }
 /* 
  * getByte - Extract byte n from word x
@@ -194,7 +197,7 @@ int isAsciiDigit(int x) {
  *   Rating: 2
  */
 int getByte(int x, int n) {
-  return 0xFF & (x >> (n << 3));
+  return (x >> (n << 3)) & 0xFF;
 
 }
 /* 
@@ -207,7 +210,11 @@ int getByte(int x, int n) {
  *  Rating: 2
  */
 int byteSwap(int x, int n, int m) {
-    return 2;
+		int var1 = 0;
+		n = n << 3;
+		m = m << 3;
+		var1 = 0xFF & ((x>>n) ^ (x>>m));
+		return (x ^ (var1<<n)) ^ (var1<<m);
 }
 /* 
  * bang - Compute !x without using !
@@ -217,7 +224,9 @@ int byteSwap(int x, int n, int m) {
  *   Rating: 4 
  */
 int bang(int x) {
-  return 2;
+	int var1 = x >> 31;
+	int var2 = (~x + 1) >> 31;
+	return (var1 | var2) + 1;
 }
 /* 
  * fitsShort - return 1 if x can be represented as a 
@@ -228,7 +237,8 @@ int bang(int x) {
  *   Rating: 1
  */
 int fitsShort(int x) {
-  return 2;
+	int var1 = (x << 16) >> 16;
+	return !(x ^ var1);
 }
 /*
  * isTmax - returns 1 if x is the maximum, two's complement number,
@@ -238,9 +248,8 @@ int fitsShort(int x) {
  *   Rating: 1
  */
 int isTmax(int x) {
-	int s = 2147483647;
-  if (s^x) return 0;
-  else return 1;
+	int var1 = !(~x);
+	return !((~(x+1)^x)|var1);
 }
 /* 
  * negate - return -x 
@@ -261,10 +270,7 @@ int negate(int x) {
  *  Rating: 2
  */
 int sign(int x) {
-	if (!x) return 0;
-	int s = x >> 31;
-	if (s) return -1;
-	else return 1;
+	return ((!!x) | (x >> 31));
 }
 /* 
  * addOK - Determine if can compute x+y without overflow
@@ -275,7 +281,8 @@ int sign(int x) {
  *   Rating: 3
  */
 int addOK(int x, int y) {
-  return 2;
+  int var1 = x + y;
+	return !(((var1 ^ x) & (var1 ^ y)) >> 31);
 }
 /* 
  * isPositive - return 1 if x > 0, return 0 otherwise 
@@ -285,7 +292,7 @@ int addOK(int x, int y) {
  *   Rating: 3
  */
 int isPositive(int x) {
-  return 2;
+  return !((x >> 31) | (!x));
 }
 /*
  * satMul2 - multiplies by 2, saturating to Tmin or Tmax if overflow
@@ -297,7 +304,10 @@ int isPositive(int x) {
  *   Rating: 3
  */
 int satMul2(int x) {
-  return 2;
+	int var1 = 0x1 << 31;
+	int sign = x >> 31;
+	int overMax = (x ^ (x + x)) >> 31;
+	return (overMax & (sign ^ ~var1)) | (~overMax & (x+x));
 }
 /* 
  * absVal - absolute value of x
@@ -308,7 +318,8 @@ int satMul2(int x) {
  *   Rating: 4
  */
 int absVal(int x) {
-  return 2;
+  int var1 = x >> 31;
+	return (x + var1) ^ var1;
 }
 /* 
  * float_neg - Return bit-level equivalent of expression -f for
@@ -322,7 +333,12 @@ int absVal(int x) {
  *   Rating: 2
  */
 unsigned float_neg(unsigned uf) {
- return 2;
+	int var1 = 0xFF << 23;
+	int var2 = 0x7FFFFF & uf;
+
+	if ((var1 & uf) == var1 && var2)
+		return uf;
+  return uf^(1<<31);
 }
 /* 
  * float_half - Return bit-level equivalent of expression 0.5*f for
@@ -336,7 +352,17 @@ unsigned float_neg(unsigned uf) {
  *   Rating: 4
  */
 unsigned float_half(unsigned uf) {
-  return 2;
+	int exp = uf & 0x7F800000;
+	int sign = uf & 0x80000000;
+	int frac = uf & 0x007FFFFF;
+	if (exp == 0x7F800000) return uf;
+	if (!exp || exp == 0x00800000) {
+		frac = frac | exp;
+		frac = (uf & 0x00FFFFFFF) >> 1;
+		frac += ((uf & 3) >> 1) & (uf & 1);
+		return sign | frac;
+	}
+	return sign | ((exp -1) & 0x7F800000) | frac;
 }
 /* 
  * float_f2i - Return bit-level equivalent of expression (int) f
@@ -351,5 +377,20 @@ unsigned float_half(unsigned uf) {
  *   Rating: 4
  */
 int float_f2i(unsigned uf) {
-  return 2;
+	int result = 0x0;
+	int maskE = 0x7F800000;
+	int maskM = 0x007FFFFF;
+	int maskS = 0x80000000;
+	int E = uf & maskE;
+	int M = (uf & maskM) | 0x00800000;
+	int S = uf & maskS;
+
+	int exp = -127  + (E>>23);
+	int shift = -23 + exp;
+	if (E == 0x7F800000 || (shift>7)) return 0x80000000u;
+	if (exp < 0) return 0;
+	if (shift < 0) result = M >> -shift;
+	else result = M >> shift;
+	if (S == 0x80000000) return ~result + 1;
+	else return result;
 }
