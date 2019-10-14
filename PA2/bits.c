@@ -334,10 +334,10 @@ int absVal(int x) {
  *   Rating: 2
  */
 unsigned float_neg(unsigned uf) {
-	int var1 = 0xFF << 23;
-	int var2 = 0x7FFFFF & uf;
+	int nan = 0xFF << 23;
+	int frac = 0x7FFFFF & uf;
 
-	if ((var1 & uf) == var1 && var2)
+	if ((nan & uf) == nan && frac)
 		return uf;
   return uf^(1<<31);
 }
@@ -353,17 +353,18 @@ unsigned float_neg(unsigned uf) {
  *   Rating: 4
  */
 unsigned float_half(unsigned uf) {
-	int exp = uf & 0x7F800000;
-	int sign = uf & 0x80000000;
-	int frac = uf & 0x007FFFFF;
-	if (exp == 0x7F800000) return uf;
-	if (!exp || exp == 0x00800000) {
+	int nan = 0xFF << 23;
+	int exp = uf & nan;
+	int s = uf & 0x80000000;
+	int frac = uf & 0x7FFFFF;
+	if (exp == nan) return uf;
+	if (!exp || exp == 0x800000) {
 		frac = frac | exp;
-		frac = (uf & 0x00FFFFFFF) >> 1;
+		frac = (uf & 0xFFFFFFF) >> 1;
 		frac += ((uf & 3) >> 1) & (uf & 1);
-		return sign | frac;
+		return s | frac;
 	}
-	return sign | ((exp -1) & 0x7F800000) | frac;
+	return s | ((exp -1) & 0x7F800000) | frac;
 }
 /* 
  * float_f2i - Return bit-level equivalent of expression (int) f
@@ -378,20 +379,18 @@ unsigned float_half(unsigned uf) {
  *   Rating: 4
  */
 int float_f2i(unsigned uf) {
-	int result = 0x0;
-	int maskE = 0x7F800000;
-	int maskM = 0x007FFFFF;
-	int maskS = 0x80000000;
-	int E = uf & maskE;
-	int M = (uf & maskM) | 0x00800000;
-	int S = uf & maskS;
+	int result = 0;
+	int exp = uf & (0xFF << 23);
+	int frac = (uf & 0x7FFFFF) | 0x00800000;
+	int s = uf & 0x80000000;
 
-	int exp = -127  + (E>>23);
-	int shift = -23 + exp;
-	if (E == 0x7F800000 || (shift>7)) return 0x80000000u;
-	if (exp < 0) return 0;
-	if (shift < 0) result = M >> -shift;
-	else result = M >> shift;
-	if (S == 0x80000000) return ~result + 1;
+	
+	int exponent = -127  + (exp >> 23);
+	int shift = -23 + exponent;
+	if (exp == 0x7F800000 || (shift>7)) return 0x80000000u;
+	if (exponent < 0) return 0;
+	if (shift < 0) result = frac >> -shift;
+	else result = frac >> shift;
+	if (s == 0x80000000) return ~result + 1;
 	else return result;
 }
