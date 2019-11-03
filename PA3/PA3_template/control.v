@@ -58,9 +58,9 @@ module pipeline_ctl
 					); */
 			alu_operation <= (funct3 != 3'b000) ? 
 			(funct7 != 7'h0 ? alu.ALU_NOP
-				: ((funct3 == 3'd111) ? alu.BIT_AND 
-					: ((funct3 == 3'd110) ? alu.BIT_OR 
-						: ( (funct3 == 3'd100) ? alu.BIT_XOR : alu.ALU_NOP)
+				: ((funct3 == 3'b111) ? alu.BIT_AND 
+					: ((funct3 == 3'b110) ? alu.BIT_OR 
+						: ( (funct3 == 3'b100) ? alu.BIT_XOR : alu.ALU_NOP)
 			)))
 			: (funct7 == 7'h20 ? alu.SUB_64 : (funct7 == 7'h0 ? alu.ADD_64 : alu.ALU_NOP));
 
@@ -74,9 +74,9 @@ module pipeline_ctl
 			mem_write <= 1'b0;
 			halt <= 1'b0;
 			alu_operation <= (funct3 != 3'b000) ? 
-			((funct3 == 3'd111) ? alu.BIT_AND 
-					: ((funct3 == 3'd110) ? alu.BIT_OR 
-						: ( (funct3 == 3'd100) ? alu.BIT_XOR : alu.ALU_NOP)
+			((funct3 == 3'b111) ? alu.BIT_AND 
+					: ((funct3 == 3'b110) ? alu.BIT_OR 
+						: ( (funct3 == 3'b100) ? alu.BIT_XOR : alu.ALU_NOP)
 			))
 			: alu.ADD_64;
 		end

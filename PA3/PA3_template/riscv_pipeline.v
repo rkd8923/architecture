@@ -78,6 +78,9 @@ module riscv_pipeline
 
 	wire [63:0] WB_write_data;
 
+	reg MEM_Hazard;	
+	hazard_detection test_hazard( .EX_MEM_RD(EX_reg_write), .ID_EX_RS1(ID_rs1), .MEM_Hazard(MEM_Hazard) );
+
 	//--------------------IF stage-----------------------
 	rom64 imem(IF_pc, IF_inst);
 

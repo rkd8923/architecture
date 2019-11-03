@@ -20,7 +20,7 @@ module rom64
 	input	[63:0] address,
 	output	[31:0] data_out
 );
-	parameter FILE = "bit.dat";
+	parameter FILE = "hazard_ctl.dat";
 	parameter ROM64_BITMASK = 64'h1fc;
 
 	reg	[31:0] data[127:0];	//Address 8:2 is offset. Align: 32bit
@@ -46,7 +46,7 @@ module mem64
 	input	[63:0] write_data,
 	output	[63:0] read_data
 );
-	parameter FILE = "bit.dat";
+	parameter FILE = "hazard_ctl.dat";
 	parameter MEM64_BITMASK = 64'hf8;
 
 	reg	[64:0] data[31:0];
