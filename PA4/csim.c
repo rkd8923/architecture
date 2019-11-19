@@ -7,7 +7,7 @@
 typedef struct {
   bool valid;
   int tag;
-  int age;
+  int time;
 } line_t;
 
 typedef struct {
@@ -34,35 +34,38 @@ int evictions = 0;
 
 char* parseInput(int, char **);
 void cacheInit();
-void simulate(int);
-void update(set_t *, size_t);
+void simulate(int, int, int);
+void timeUpdate(line_t*, set_t*);
+bool checkHit(set_t *, int);
+void clearAll();
+line_t* findEmptyLine(set_t*);
+line_t* findEvictLine(set_t*);
 
 int main(int argc, char *argv[]) {
-  FILE *trace; char cmd; int addr;
+  FILE *trace; char cmd; int addr; int tag; int set_index;
 
   char* file_name = parseInput(argc, argv);
   trace = fopen(file_name, "r");
   
-  // check input command
-  if (!CACHE_SIZE->s || !CACHE_SIZE->E || !CACHE_SIZE->b || !trace) return 1;
-
   // cache initialize
   cacheInit();
 
   while (fscanf(trace, " %c %x%*c%*d", &cmd, &addr) != EOF) {
+    tag = 0xffffffff & (addr >> (CACHE_SIZE->s + CACHE_SIZE->b));
+    set_index = (0x7fffffff >> (31 - CACHE_SIZE->s)) & (addr >> CACHE_SIZE->b);
     // printf("cmd %c %d\n", cmd, addr);
     switch(cmd) {
       case 'I':
         break;
       case 'L':
-        simulate(addr);
+        simulate(addr, tag, set_index);
         break;
       case 'S':
-        simulate(addr);
+        simulate(addr, tag, set_index);
         break;
       case 'M':
-        simulate(addr);
-        simulate(addr);	
+        simulate(addr, tag, set_index);
+        simulate(addr, tag, set_index);	
         break;
       default:
         break;
@@ -70,8 +73,7 @@ int main(int argc, char *argv[]) {
   }
   printSummary(hits, misses, evictions);
   fclose(trace);
-  for (size_t i = 0; i < CACHE_SIZE->S; ++i) { free(cache.sets[i].lines); }
-  free(cache.sets);
+  clearAll();
   return 0;
 }
 
@@ -104,74 +106,106 @@ char* parseInput(int argc, char *argv[]) {
 }
 
 void cacheInit() {
+  int i;
   cache.sets = malloc(sizeof(set_t) * CACHE_SIZE->S);
-  for (int i = 0; i < CACHE_SIZE->S; i++) {
+  for (i = 0; i < CACHE_SIZE->S; i++) {
     cache.sets[i].lines = malloc(sizeof(line_t) * CACHE_SIZE->E);
   }
 }
 
-void simulate(int addr) {
-  int set_index = (0x7fffffff >> (31 - CACHE_SIZE->s)) & (addr >> CACHE_SIZE->b);
-  int tag = 0xffffffff & (addr >> (CACHE_SIZE->s + CACHE_SIZE->b));
+void timeUpdate(line_t *line, set_t *set) {
+  int i;
+  line_t *temp_line;
+  for (i = 0; i < CACHE_SIZE->E; i++) {
+    temp_line = &set->lines[i];
+    if (!temp_line->valid) continue;
+    if (temp_line->time > line->time) {
+      temp_line->time--;
+    }
+  }
+  line->time = CACHE_SIZE->E - 1;
+}
 
+void simulate(int addr, int tag, int set_index) {
+  bool check = false;
+  line_t *temp_line = NULL;
   set_t *set = &cache.sets[set_index];
 
-  // Look up for cache hit
-  for (int i = 0; i < CACHE_SIZE->E; i++) {
-    line_t* line = &set->lines[i];
-
-    // Check if the cache line is valid
-    if (!line->valid) { continue; }
-    // Compare tag bits
-    if (line->tag != tag) { continue; }
-
-    // Cache hit!
-    ++hits;
-    update(set, i);
-    return;
-  }
-
-  // Cache miss!
-  ++misses;
-
-  // Look up for empty cache line
-  for (size_t i = 0; i < CACHE_SIZE->E; ++i) {
-    line_t* line = &set->lines[i];
-
-    if (line->valid) { continue; }
-
-    line->valid = true;
-    line->tag = tag;
-    update(set, i);
-    return;
-  }
-
-  // No empty cache line, eviction!
-  ++evictions;
-
-  // Look up for least recently used cache line
-  for (size_t i = 0; i < CACHE_SIZE->E; ++i) {
-    line_t* line = &set->lines[i];
-
-    if (line->age) { continue; }
-
-    line->valid = true;
-    line->tag = tag;
-    update(set, i);
-    return;
+  check = checkHit(set, tag);
+  if (check) {
+    hits++;
+  } else {
+    misses++;
+    temp_line = findEmptyLine(set);
+    if (temp_line) {
+      temp_line->valid = true;
+      temp_line->tag = tag;
+      timeUpdate(temp_line, set);
+    } else {
+        evictions++;
+        temp_line = NULL;
+        temp_line = findEvictLine(set);
+        temp_line->valid = true;
+        temp_line->tag = tag;
+        timeUpdate(temp_line, set);
+    }
   }
 }
 
-void update(set_t *set, size_t line_no) {
-  line_t *line = &set->lines[line_no];
-
-  for (size_t i = 0; i < CACHE_SIZE->E; ++i) {
-    line_t *it = &set->lines[i];
-    if (!it->valid) { continue; }
-    if (it->age <= line->age) { continue; }
-
-    --it->age;
+bool checkHit(set_t *set, int tag) {
+  bool ret = false;
+  line_t *temp_line;
+  int i = 0;
+  for (i = 0; i < CACHE_SIZE->E; i++) {
+    temp_line = &set->lines[i];
+    if (temp_line->valid) {
+      if (temp_line->tag == tag) {
+        ret = true;
+        timeUpdate(temp_line, set);
+        break;
+      }
+    }
   }
+  return ret;
+}
 
-  line->age = CACHE_SIZE->E - 1;
+line_t* findEmptyLine(set_t *set) {
+  int i;
+  line_t* ret = NULL;
+  for (i = 0; i < CACHE_SIZE->E; i++) {
+    line_t* temp_line = &set->lines[i];
+    if (!temp_line->valid) {
+      ret = temp_line;
+      break;
+    }
+  }
+  return ret;
+}
+
+line_t* findEvictLine(set_t *set) {
+  int i; 
+  int ret_time = -1;
+  line_t *ret = NULL;
+  for (i = 0; i < CACHE_SIZE->E; i++) {
+    line_t* temp_line = &set->lines[i];
+    if (!temp_line->valid) continue;
+    if (ret_time == -1) {
+      ret = temp_line;
+      ret_time = ret->time;
+    } else {
+      if (ret_time > temp_line->time) {
+        ret = temp_line;
+        ret_time = ret->time;
+      }
+    }
+  }
+  return ret;
+}
+
+void clearAll() {
+  int i;
+  for (i = 0; i < CACHE_SIZE->S; i++) {
+    free(cache.sets[i].lines);
+  }
+  free(cache.sets);
 }
