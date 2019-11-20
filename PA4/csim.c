@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <getopt.h>
 #include <stdbool.h>
 #include "cachelab.h"
+
 typedef struct {
   bool valid;
   int tag;
@@ -30,16 +30,16 @@ cache_size_t *CACHE_SIZE;
 cache_t cache = {};
 int hits = 0;
 int misses = 0;
-int evictions = 0;
+int evicts = 0;
 
 char* parseInput(int, char **);
 void cacheInit();
 void simulate(int, int, int);
 void timeUpdate(line_t*, set_t*);
-bool checkHit(set_t *, int);
-void clearAll();
 line_t* findEmptyLine(set_t*);
 line_t* findEvictLine(set_t*);
+bool checkHit(set_t *, int);
+void clearAll();
 
 int main(int argc, char *argv[]) {
   FILE *trace; char cmd; int addr; int tag; int set_index;
@@ -71,7 +71,7 @@ int main(int argc, char *argv[]) {
         break;
     }
   }
-  printSummary(hits, misses, evictions);
+  printSummary(hits, misses, evicts);
   fclose(trace);
   clearAll();
   return 0;
@@ -132,17 +132,17 @@ void simulate(int addr, int tag, int set_index) {
   set_t *set = &cache.sets[set_index];
 
   check = checkHit(set, tag);
-  if (check) {
+  if (check) { // hit
     hits++;
-  } else {
+  } else { // miss
     misses++;
     temp_line = findEmptyLine(set);
     if (temp_line) {
       temp_line->valid = true;
       temp_line->tag = tag;
       timeUpdate(temp_line, set);
-    } else {
-        evictions++;
+    } else {  // evict
+        evicts++;
         temp_line = NULL;
         temp_line = findEvictLine(set);
         temp_line->valid = true;
