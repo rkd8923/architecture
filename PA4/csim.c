@@ -208,4 +208,5 @@ void clearAll() {
     free(cache.sets[i].lines);
   }
   free(cache.sets);
+  free(CACHE_SIZE);
 }
