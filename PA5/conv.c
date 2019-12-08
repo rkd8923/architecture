@@ -7,23 +7,28 @@ void convolution(const int M, const int N, const int *input, int *output, const 
 	{
 		for(int j = 0 ; j < N ; j++)
 		{
-			//For each pixel
-			for(int x = 0 ; x < 3 ; x++)
-			{
-				for(int y = 0 ; y < 3 ; y++)
-				{
-					//Boundary check
-					if(i + x - 1 < 0)
-						continue;
-					if(i + x - 1 >= M)
-						continue;
-					if(j + y - 1 < 0)
-						continue;
-					if(j + y - 1 >= N)
-						continue;
+			if (i - 1 < 0) output[i * N + j] += 0;
+			else {
+				if (j - 1 < 0) output[i * N + j] += 0;
+				else output[i * N + j] += input[(i-1) * N + (j - 1)] * filter[0][0];
+				output[i * N + j] += input[(i-1) * N + j] * filter[0][1];
+				if (j + 1 >= N) output[i * N + j] += 0;
+				else output[i * N + j] += input[(i-1) * N + (j + 1)] * filter[0][2];
+			}
 
-					output[i * N + j] += input[(i + x - 1) * N + (j + y - 1)] * filter[x][y];
-				}
+			if (j - 1 < 0) output[i * N + j] += 0;
+			else output[i * N + j] += input[i * N + (j - 1)] * filter[1][0];
+			output[i * N + j] += input[i * N + j] * filter[1][1];
+			if (j + 1 >= N) output[i * N + j] += 0;
+			else output[i * N + j] += input[i * N + (j + 1)] * filter[1][2];
+
+			if (i + 1 >= M) output[i * N + j] += 0;
+			else {
+				if (j - 1 < 0) output[i * N + j] += 0;
+				else output[i * N + j] += input[(i + 1) * N + (j - 1)] * filter[2][0];
+				output[i * N + j] += input[(i + 1) * N + j] * filter[2][1];
+				if (j + 1 >= N) output[i * N + j] += 0;
+				else output[i * N + j] += input[(i + 1) * N + (j + 1)] * filter[2][2];
 			}
 		}
 	}
