@@ -31,6 +31,7 @@ void convolution(const register int M, const register int N, const register int 
 				if (j + 1 < N) output[locate] += input[third + 1] * _filter[8];
 			}
 
+			if (j == N - 1) break;
 			locate++;
 			if (i - 1 >= 0) {
 				register int first = locate - N;
@@ -49,44 +50,6 @@ void convolution(const register int M, const register int N, const register int 
 				output[locate] += input[third] * _filter[7];
 				if (j + 2 < N) output[locate] += input[third + 1] * _filter[8];
 			}
-						locate++;
-			if (i - 1 >= 0) {
-				register int first = locate - N;
-				if (j >= 0) output[locate] += input[first - 1] * _filter[0];
-				output[locate] += input[first] * _filter[1];
-				if (j + 2 < N) output[locate] += input[first + 1] * _filter[2];
-			}
-
-			if (j >= 0) output[locate] += input[locate - 1] * _filter[3];
-			output[locate] += input[locate] * _filter[4];
-			if (j + 2 < N) output[locate] += input[locate + 1] * _filter[5];
-
-			if (i + 1 < M) {
-				register int third = locate + N;
-				if (j >= 0) output[locate] += input[third - 1] * _filter[6];
-				output[locate] += input[third] * _filter[7];
-				if (j + 2 < N) output[locate] += input[third + 1] * _filter[8];
-			}
-						locate++;
-			if (i - 1 >= 0) {
-				register int first = locate - N;
-				if (j >= 0) output[locate] += input[first - 1] * _filter[0];
-				output[locate] += input[first] * _filter[1];
-				if (j + 2 < N) output[locate] += input[first + 1] * _filter[2];
-			}
-
-			if (j >= 0) output[locate] += input[locate - 1] * _filter[3];
-			output[locate] += input[locate] * _filter[4];
-			if (j + 2 < N) output[locate] += input[locate + 1] * _filter[5];
-
-			if (i + 1 < M) {
-				register int third = locate + N;
-				if (j >= 0) output[locate] += input[third - 1] * _filter[6];
-				output[locate] += input[third] * _filter[7];
-				if (j + 2 < N) output[locate] += input[third + 1] * _filter[8];
-			}
 		}
-
-
 	}
 }
