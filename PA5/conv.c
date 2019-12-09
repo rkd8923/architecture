@@ -9,8 +9,8 @@ void convolution(const register int M, const register int N, const register int 
 	//Write your code here
 	for(register int i = 0 ; i < M ; i ++)
 	{
-		register int j = 0;
-		for(; j < N ; j += 4)
+		
+		for(register int j = 0; j < N ; j += 2)
 		{
 			register int locate = i * N + j;
 			if (i - 1 >= 0) {
