@@ -1,5 +1,5 @@
 #include "conv.h"
-void convolution(const register int M, const register int N, const register int *input, register int *output, const int filter[3][3]) 
+void convolution(const register int M, const register int N, const register int *input, register int *output, const register int filter[3][3]) 
 {
 	register int _filter[9] = {
 		filter[0][0], filter[0][1], filter[0][2],
